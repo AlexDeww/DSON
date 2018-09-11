@@ -117,8 +117,22 @@ World
 22
 ```
 
+###Update 11.09.2018
+Add map support
+```pascal
+TMapItem = record
+  boolVal: Boolean;
+  doubleVal: Double;
+end;
+
+TTestMap = record
+  stringVal: String;
+  intVal: Integer;
+  mapVal: TMap<string, TMapItem>
+end;
+```
 
 **Supported type:**
-Integer, Enumeration, Float, String, Class, Record, Array
+Integer, Enumeration, Float, String, Class, Record, Array, TMap
 
 *Use only public or published fields/property*
