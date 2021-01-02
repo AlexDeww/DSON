@@ -141,11 +141,11 @@ type
 type
   TDSONBase = class
   protected
-    FRttiContext: TRttiContext;
+    FRttiContext : TRttiContext;
     function GetObjInstance(const Value:TValue):Pointer;
   public
     constructor Create;virtual;
-    destructor Destroy; override;
+    destructor Destroy;override;
   end;
 
   TDSONValueReader = class(TDSONBase)
@@ -216,25 +216,24 @@ type
 
 procedure TDSONValueReader.FillMapValue(const Instance:TValue;const jo:TJSONObject);
 var
-  RttiType: TRttiType;
-  addMethod: TRttiMethod;
-  valueType: TRttiType;
-  keyType: TRttiType;
-  jp: TJSONPair;
+  RttiType  : TRttiType;
+  addMethod : TRttiMethod;
+  valueType : TRttiType;
+  keyType   : TRttiType;
+  jp        : TJSONPair;
 
-  key: TValue;
-  Value: TValue;
+  key       : TValue;
+  Value     : TValue;
 begin
   RttiType := FRttiContext.GetType(Instance.TypeInfo);
 
   addMethod := RttiType.GetMethod('addOrSetValue');
-  keyType := RttiType.GetField('FKeyType').FieldType;
+  keyType   := RttiType.GetField('FKeyType').FieldType;
   valueType := RttiType.GetField('FValueType').FieldType;
-
   for jp in jo do
   begin
-    if TryReadValueFromJson(keyType, jp.JsonString, key) and TryReadValueFromJson(valueType, jp.JsonValue, Value) then
-      addMethod.Invoke(Instance, [key, Value])
+    if TryReadValueFromJson(keyType,jp.JsonString,key) and TryReadValueFromJson(valueType,jp.JsonValue,Value) then
+      addMethod.Invoke(Instance,[key,Value])
   end;
 end;
 
