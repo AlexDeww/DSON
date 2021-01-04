@@ -1,123 +1,132 @@
 unit uDSON;
 
-//Delphi JSON Serializer
+//Delphi Json Serializer
 
 interface
 
 uses
-  System.SysUtils, System.Rtti, System.TypInfo, System.JSON,
-  System.Generics.Collections, System.Classes;
-
+  {$IFDEF DCC}
+  System.SysUtils,System.Rtti,System.TypInfo,System.Json,
+  System.Generics.Collections,System.Classes,
+  {$ELSE}
+  SysUtils,Rtti,TypInfo,Json,
+  Generics.Collections,Classes
+  {$ENDIF}
+  uTypeInfo;
 type
   SerializedNameAttribute = class(TCustomAttribute)
   strict private
-    FName: string;
+    FName : string;
   public
-    constructor Create(const name: string);
-    property name: string read FName;
+    constructor Create(const Name:string);
+    property Name:string read FName;
   end;
 
   DefValueAttribute = class(TCustomAttribute)
   strict private
-    FValue: TValue;
+    FValue : TValue;
   public
-    constructor Create(const defValue: Integer); overload;
-    constructor Create(const defValue: string); overload;
-    constructor Create(const defValue: Single); overload;
-    constructor Create(const defValue: Double); overload;
-    constructor Create(const defValue: Extended); overload;
-    constructor Create(const defValue: Currency); overload;
-    constructor Create(const defValue: Int64); overload;
-    constructor Create(const defValue: Boolean); overload;
-    property defVal: TValue read FValue;
+    constructor Create(const DefValue:Integer);overload;
+    constructor Create(const DefValue:string);overload;
+    constructor Create(const DefValue:Single);overload;
+    constructor Create(const DefValue:Double);overload;
+    constructor Create(const DefValue:Extended);overload;
+    constructor Create(const DefValue:Currency);overload;
+    constructor Create(const DefValue:Int64);overload;
+    constructor Create(const DefValue:Boolean);overload;
+  public
+    property DefVal : TValue read FValue;
   end;
 
-  EDSONException = class(Exception);
+  EDSONException     = class(Exception);
 
-  TDSON = record
+  TDSONWriterOption  = (IgnoreUnknownTypes,ForceDefault);
+  TDSONWriterOptions = set of TDSONWriterOption;
+
+  TDSON =
+  record
   public
-    class function fromJson<T>(const json: string): T; overload; static;
-    class function fromJson<T>(const jsonStream: TStream): T; overload; static;
-    class function toJson<T>(const value: T; const ignoreUnknownTypes: Boolean = False): string; static;
+    class function FromJson<T>(const Json:string):T;overload;static;
+    class function FromJson<T>(const JsonStream:TStream):T;overload;static;
+    class function ToJson<T>(const Value:T;const Options:TDSONWriterOptions=[IgnoreUnknownTypes]):string;static;
   end;
 
   IMap<K, V> = interface
   ['{830D3690-DAEF-40D1-A186-B6B105462D89}']
-    function getKeys(): TEnumerable<K>;
-    function getValues(): TEnumerable<V>;
-  
-    procedure add(const key: K; const value: V);
+    function GetKeys   : TEnumerable<K>;
+    function GetValues : TEnumerable<V>;
+
+    procedure Add(const key:K; const Value:V);
     procedure remove(const key: K);
-    function extractPair(const key: K): TPair<K, V>;
-    procedure clear;
-    function getValue(const key: K): V;
-    function tryGetValue(const key: K; out value: V): Boolean;
-    procedure addOrSetValue(const key: K; const value: V);
-    function containsKey(const key: K): Boolean;
-    function containsValue(const value: V): Boolean;
-    function toArray(): TArray<TPair<K, V>>;
-    function getCount(): Integer;
+    function  ExtractPair(const key:K):TPair<K,V>;
+    procedure Clear;
+    function  GetValue(const key:K):V;
+    function  TryGetValue(const key:K;out Value:V):Boolean;
+    procedure AddOrSetValue(const key:K;const Value:V);
+    function  ContainsKey(const key:K):Boolean;
+    function  ContainsValue(const Value:V):Boolean;
+    function  ToArray:TArray<TPair<K, V>>;
+    function  GetCount:Integer;
 
-    function getEnumerator: TEnumerator<TPair<K, V>>;
-    property keys: TEnumerable<K> read getKeys;
-    property values: TEnumerable<V> read getValues;
+    function GetEnumerator:TEnumerator<TPair<K, V>>;
+    property Keys:TEnumerable<K> read GetKeys;
+    property Values:TEnumerable<V> read GetValues;
 
-    property items[const key: K]: V read getValue write addOrSetValue;
-    property count: Integer read getCount;
+    property Items[const key:K]:V read GetValue write AddOrSetValue;
+    property Count:Integer read GetCount;
   end;
 
-  TMapClass<K, V> = class(TInterfacedObject, IMap<K,V>)
+  TMapClass<K,V>=class(TInterfacedObject,IMap<K,V>)
   private
-    FMap: TDictionary<K, V>;
+    FMap : TDictionary<K,V>;
   public
-    constructor Create();
-    destructor Destroy(); override;
-  
-    function getKeys(): TEnumerable<K>;
-    function getValues(): TEnumerable<V>;
-  
-    procedure add(const key: K; const value: V);
-    procedure remove(const key: K);
-    function extractPair(const key: K): TPair<K, V>;
-    procedure clear;
-    function getValue(const key: K): V;
-    function tryGetValue(const key: K; out value: V): Boolean;
-    procedure addOrSetValue(const key: K; const value: V);
-    function containsKey(const key: K): Boolean;
-    function containsValue(const value: V): Boolean;
-    function toArray(): TArray<TPair<K, V>>;
-    function getCount(): Integer;
+    constructor Create;
+    destructor Destroy;override;
 
-    function getEnumerator: TEnumerator<TPair<K, V>>;
-    property Keys: TEnumerable<K> read getKeys;
-    property Values: TEnumerable<V> read getValues;
+    function GetKeys:TEnumerable<K>;
+    function GetValues:TEnumerable<V>;
 
-    property items[const key: K]: V read getValue write addOrSetValue;
-    property count: Integer read getCount;
+    procedure Add(const key:K;const Value:V);
+    procedure Remove(const key:K);
+    function  ExtractPair(const key:K):TPair<K,V>;
+    procedure Clear;
+    function  GetValue(const key: K): V;
+    function  TryGetValue(const key: K; out Value:V):Boolean;
+    procedure AddOrSetValue(const key:K;const Value:V);
+    function  ContainsKey(const key: K):Boolean;
+    function  ContainsValue(const Value:V):Boolean;
+    function  ToArray:TArray<TPair<K, V>>;
+    function  GetCount:Integer;
+
+    function  GetEnumerator:TEnumerator<TPair<K,V>>;
+  public
+    property Keys               : TEnumerable<K> read GetKeys;
+    property Values             : TEnumerable<V> read GetValues;
+    property Items[const key:K] : V read GetValue write AddOrSetValue;
+    property Count              : Integer read GetCount;
   end;
 
-  TMap<K, V> = record
+  TMap<K,V> = record
   private
-    FMapIntf: IMap<K, V>;
+    FMapIntf : IMap<K,V>;
     {$HINTS OFF}
-    FValueType: V;
-    FKeyType: K;
+    FValueType : V;
+    FKeyType   : K;
     {$HINTS ON}
-
     function getMap(): IMap<K, V>;
   public
     function getKeys(): TEnumerable<K>;
     function getValues(): TEnumerable<V>;
-  
-    procedure add(const key: K; const value: V);
+
+    procedure add(const key: K; const Value: V);
     procedure remove(const key: K);
     function extractPair(const key: K): TPair<K, V>;
     procedure clear;
     function getValue(const key: K): V;
-    function tryGetValue(const key: K; out value: V): Boolean;
-    procedure addOrSetValue(const key: K; const value: V);
+    function tryGetValue(const key: K; out Value: V): Boolean;
+    procedure addOrSetValue(const key: K; const Value: V);
     function containsKey(const key: K): Boolean;
-    function containsValue(const value: V): Boolean;
+    function containsValue(const Value: V): Boolean;
     function toArray(): TArray<TPair<K, V>>;
     function getCount(): Integer;
 
@@ -131,169 +140,156 @@ type
 
 type
   TDSONBase = class
-  private class var
-    booleanTi: Pointer;
   protected
-    FRttiContext: TRttiContext;
-    function getObjInstance(const value: TValue): Pointer;
+    FRttiContext : TRttiContext;
+    function GetObjInstance(const Value:TValue):Pointer;
   public
-    constructor Create();
-    destructor Destroy(); override;
+    constructor Create;virtual;
+    destructor Destroy;override;
   end;
 
   TDSONValueReader = class(TDSONBase)
   strict private
-    function readIntegerValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readInt64Value(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readFloatValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readStringValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readEnumValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readClassValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readRecordValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readDynArrayValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
-    function readDynArrayValues(const rttiType: TRttiType; const jv: TJSONValue): TArray<TValue>;
-    function readSetValue(const rttiType: TRttiType; const jv: TJSONValue): TValue;
+    function ReadIntegerValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadFloatValue(const RttiType: TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadCharValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadStringValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadEnumValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadClassValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadRecordValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadDynArrayValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+    function ReadDynArrayValues(const RttiType: TRttiType;const JsonValue:TJSONValue):TArray<TValue>;
+    function ReadSetValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 
-    procedure setObjValue(const instance: TValue; const rttiMember: TRttiMember;
-      const jv: TJSONValue);
-    procedure fillObjectValue(const instance: TValue; const jo: TJSONObject);
-    procedure fillMapValue(const instance: TValue; const jo: TJSONObject);
-    function tryReadValueFromJson(const rttiType: TRttiType; const jv: TJSONValue;
-      var outV: TValue): Boolean;
+    procedure SetObjValue(const Instance:TValue;const RttiMember:TRttiMember;const JsonValue:TJSONValue);
+    procedure FillObjectValue(const Instance:TValue;const jo:TJSONObject);
+    procedure FillMapValue(const Instance:TValue;const jo:TJSONObject);
+    function  TryReadValueFromJson(const RttiType:TRttiType;const JsonValue:TJSONValue;out OutValue:TValue):Boolean;
   public
-    function processRead(const _typeInfo: PTypeInfo; const jv: TJSONValue): TValue;
+    function ProcessRead(const ATypeInfo:PTypeInfo;const JsonValue:TJSONValue):TValue;
   end;
 
-  TDSONValueWriter = class(TDSONBase)
+  TDSONValueWriter   = class(TDSONBase)
   strict private
-    FIgnoreUnknownTypes: Boolean;
-    function writeIntegerValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeInt64Value(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeFloatValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeStringValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeEnumValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeClassValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeDynArrayValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
-    function writeSetValue(const rttiType: TRttiType; const value: TValue): TJSONValue;
+    FOptions : TDSONWriterOptions;
+    function IgnoreDefault:Boolean;
+    function WriteIntegerValue(const RttiType:TRttiType; const Value: TValue): TJSONValue;
+    function WriteFloatValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
+    function WriteStringValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
+    function WriteEnumValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
+    function WriteClassValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
+    function WriteDynArrayValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
+    function WriteSetValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
 
-    function getObjValue(const instance: TValue; const rttiMember: TRttiMember): TJSONValue;
-    function writeObject(const instance: TValue): TJSONObject;
-    function writeMap(const instance: TValue): TJSONObject;
-    function tryWriteJsonValue(const value: TValue; var jv: TJSONValue): Boolean;
+    function GetObjValue(const Instance: TValue; const RttiMember: TRttiMember): TJSONValue;
+    function WriteObject(const Instance: TValue): TJSONObject;
+    function WriteMap(const Instance: TValue): TJSONObject;
+    function TryWriteJsonValue(const Value: TValue; var JsonValue: TJSONValue): Boolean;
   public
-    function processWrite(const value: TValue; const ignoreUnknownTypes: Boolean): TJSONValue;
+    function ProcessWrite(const Value:TValue;const Options:TDSONWriterOptions):TJSONValue;
   end;
-
-function DSON(): TDSON;
 
 resourcestring
   rsNotSupportedType = 'Not supported type %s, type kind: %s';
-  rsInvalidJsonArray = 'Json value is not array.';
-  rsInvalidJsonObject = 'Json value is not object.';
+  rsInvalidJsonArray = 'Json Value is not array.';
+  rsInvalidJsonObject = 'Json Value is not object.';
+  rsInvalidJsonDateTime = 'Json Value is not DateTime: %s';
 
 implementation
-
 const
-  MAP_PREFIX = 'TMap<';
-
-function DSON(): TDSON;
-begin
-end;
-
+  MAP_PREFIX   = 'TMap<';
+  NullDateTime = -328716;
 type
   TRttiMemberHelper = class helper for TRttiMember
   private
-    function hasAttribute<A: TCustomAttribute>(var attr: A): Boolean; overload;
+    function HasAttribute<A:TCustomAttribute>(var Attribute:A):Boolean;overload;
   public
-    procedure setValue(const instance: Pointer; const value: TValue);
-    function getValue(const instance: Pointer): TValue;
-    function getType(): TRttiType;
-    function canWrite(): Boolean;
-    function canRead(): Boolean;
-    function getName(): string;
+    procedure SetValue(const Instance:Pointer;const Value:TValue);
+    function  GetValue(const Instance: Pointer):TValue;
+    function  GetType:TRttiType;
+    function  CanWrite:Boolean;
+    function  CanRead:Boolean;
+    function  GetName:string;
   end;
 
 { TDSONValueReader }
 
-procedure TDSONValueReader.fillMapValue(const instance: TValue;
-  const jo: TJSONObject);
+procedure TDSONValueReader.FillMapValue(const Instance:TValue;const jo:TJSONObject);
 var
-  rttiType: TRttiType;
-  addMethod: TRttiMethod;
-  valueType: TRttiType;
-  keyType: TRttiType;
-  jp: TJSONPair;
+  RttiType  : TRttiType;
+  addMethod : TRttiMethod;
+  valueType : TRttiType;
+  keyType   : TRttiType;
+  jp        : TJSONPair;
 
-  key: TValue;
-  value: TValue;
+  key       : TValue;
+  Value     : TValue;
 begin
-  rttiType := FRttiContext.GetType(instance.TypeInfo);
-  
-  addMethod := rttiType.GetMethod('addOrSetValue');
-  keyType := rttiType.GetField('FKeyType').FieldType;
-  valueType := rttiType.GetField('FValueType').FieldType;
+  RttiType := FRttiContext.GetType(Instance.TypeInfo);
 
+  addMethod := RttiType.GetMethod('addOrSetValue');
+  keyType   := RttiType.GetField('FKeyType').FieldType;
+  valueType := RttiType.GetField('FValueType').FieldType;
   for jp in jo do
   begin
-    if tryReadValueFromJson(keyType, jp.JsonString, key) and tryReadValueFromJson(valueType, jp.JsonValue, value) then
-      addMethod.Invoke(instance, [key, value])
+    if TryReadValueFromJson(keyType,jp.JsonString,key) and TryReadValueFromJson(valueType,jp.JsonValue,Value) then
+      addMethod.Invoke(Instance,[key,Value])
   end;
 end;
 
-procedure TDSONValueReader.fillObjectValue(const instance: TValue;
+procedure TDSONValueReader.FillObjectValue(const Instance: TValue;
   const jo: TJSONObject);
 
-  procedure processReadRttiMember(const rttiMember: TRttiMember);
+  procedure processReadRttiMember(const RttiMember: TRttiMember);
   var
     propertyName: string;
-    jv: TJSONValue;
+    JsonValue: TJSONValue;
   begin
-    if not ((rttiMember.Visibility in [mvPublic, mvPublished]) and rttiMember.canWrite()) then
+    if not ((RttiMember.Visibility in [mvPublic, mvPublished]) and RttiMember.canWrite()) then
       Exit();
 
-    propertyName := rttiMember.getName();
-    jv := jo.GetValue(propertyName);
-    setObjValue(instance, rttiMember, jv);
+    propertyName := RttiMember.getName();
+    JsonValue := jo.GetValue(propertyName);
+    SetObjValue(Instance, RttiMember, JsonValue);
   end;
 
 var
-  rttiType: TRttiType;
-  rttiMember: TRttiMember;
+  RttiType: TRttiType;
+  RttiMember: TRttiMember;
 begin
-  rttiType := FRttiContext.GetType(instance.TypeInfo);
-  for rttiMember in rttiType.GetDeclaredProperties() do
-    processReadRttiMember(rttiMember);
-  for rttiMember in rttiType.GetDeclaredFields() do
-    processReadRttiMember(rttiMember);
+  RttiType := FRttiContext.GetType(Instance.TypeInfo);
+  for RttiMember in RttiType.GetDeclaredProperties() do
+    processReadRttiMember(RttiMember);
+  for RttiMember in RttiType.GetDeclaredFields() do
+    processReadRttiMember(RttiMember);
 end;
 
-function TDSONValueReader.readEnumValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadEnumValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 var
-  enumItemName: string;
-  i: Int64;
+  LEnum  : string;
+  LValue : Int64;
 begin
-  if rttiType.Handle = booleanTi then
-    Result := jv.GetValue<Boolean>()
+  if BaseTypeInfo(RttiType.Handle)=BooleanTypeInfo then
+  begin
+    Result := TValue.From(JsonValue.AsType<Boolean>);
+  end
   else
   begin
-    enumItemName := jv.Value;
-    i := GetEnumValue(rttiType.Handle, enumItemName);
-    Result := TValue.FromOrdinal(rttiType.Handle, i);
+    LEnum  := JsonValue.Value;
+    LValue := GetEnumValue(RttiType.Handle,LEnum);
+    Result := TValue.FromOrdinal(RttiType.Handle,LValue);
   end;
 end;
 
-function TDSONValueReader.readClassValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadClassValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 var
   ret: TValue;
 begin
-  if not (jv is TJSONObject) then
-    raise EDSONException.Create(rsInvalidJsonObject);
+  if not (JsonValue is TJSONObject) then raise EDSONException.Create(rsInvalidJsonObject);
 
-  ret := rttiType.GetMethod('Create').Invoke(rttiType.AsInstance.MetaclassType, []);
+  ret := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, []);
   try
-    fillObjectValue(ret, jv as TJSONObject);
+    FillObjectValue(ret, JsonValue as TJSONObject);
     Result := ret;
   except
     ret.AsObject.Free();
@@ -301,14 +297,7 @@ begin
   end;
 end;
 
-function TDSONValueReader.readDynArrayValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
-begin
-  Result := TValue.FromArray(rttiType.Handle, readDynArrayValues(rttiType, jv));
-end;
-
-function TDSONValueReader.readDynArrayValues(const rttiType: TRttiType;
-  const jv: TJSONValue): TArray<TValue>;
+function TDSONValueReader.ReadDynArrayValues(const RttiType:TRttiType;const JsonValue:TJSONValue):TArray<TValue>;
 var
   ja: TJSONArray;
   jav: TJSONValue;
@@ -316,337 +305,394 @@ var
   values: TArray<TValue>;
   elementType: TRttiType;
 begin
-  if not (jv is TJSONArray) then
-    raise EDSONException.Create(rsInvalidJsonArray);
-
-  ja := jv as TJSONArray;
-  elementType := (rttiType as TRttiDynamicArrayType).ElementType;
+  if not (JsonValue is TJSONArray) then raise EDSONException.Create(rsInvalidJsonArray);
+  ja := JsonValue as TJSONArray;
+  elementType := (RttiType as TRttiDynamicArrayType).ElementType;
   SetLength(values, ja.Count);
   for i := 0 to ja.Count - 1 do
   begin
     values[i] := TValue.Empty;
     jav := ja.Items[i];
-    tryReadValueFromJson(elementType, jav, values[i])
+    TryReadValueFromJson(elementType, jav, values[i])
   end;
   Result := values;
 end;
 
-function TDSONValueReader.readFloatValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadDynArrayValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 var
-  rft: TRttiFloatType;
+  Bytes : TBytes;
 begin
-  rft := rttiType as TRttiFloatType;
-  case rft.FloatType of
-    ftSingle: Result := jv.GetValue<Single>();
-    ftDouble: Result := jv.GetValue<Double>();
-    ftExtended: Result := jv.GetValue<Extended>();
-    ftComp: Result := jv.GetValue<Comp>();
-    ftCurr: Result := jv.GetValue<Currency>();
+  if BaseTypeInfo(RttiType.Handle)=BytesTypeInfo then
+  begin
+    Bytes  := DecodeToBytes(JsonValue.Value);
+    Result := TValue.From(Bytes);
+  end
+  else Result := TValue.FromArray(RttiType.Handle,ReadDynArrayValues(RttiType,JsonValue));
+end;
+
+function TDSONValueReader.ReadFloatValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+var
+  FloatType : TRttiFloatType;
+function ReadDateTimeValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+var
+  DateTime : Extended;
+begin
+  DateTime := ISO8601ToDateTime(JsonValue.Value);
+  Result   := TValue.From(DateTime);
+end;
+begin
+  if (BaseTypeInfo(RttiType.Handle)=DateTimeTypeInfo) or
+     (BaseTypeInfo(RttiType.Handle)=DateTypeInfo)     or
+     (BaseTypeInfo(RttiType.Handle)=TimeTypeInfo)     then
+  begin
+    Exit(ReadDateTimeValue(RttiType,JsonValue));
+  end;
+  FloatType := RttiType as TRttiFloatType;
+  case FloatType.FloatType of
+    ftSingle   : Result := JsonValue.GetValue<Single>;
+    ftDouble   : Result := JsonValue.GetValue<Double>;
+    ftExtended : Result := JsonValue.GetValue<Extended>;
+    ftComp     : Result := JsonValue.GetValue<Comp>;
+    ftCurr     : Result := JsonValue.GetValue<Currency>;
   end;
 end;
 
-function TDSONValueReader.readInt64Value(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadIntegerValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 begin
-  Result := jv.GetValue<Int64>();
+  Result := JsonValue.GetValue<Int64>;
 end;
 
-function TDSONValueReader.readIntegerValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
-begin
-  Result := jv.GetValue<Integer>();
-end;
-
-function TDSONValueReader.readRecordValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadRecordValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 var
-  ret: TValue;
-  rttiRecord: TRttiRecordType;
+  LValue     : TValue;
+  RttiRecord : TRttiRecordType;
 begin
-  if not (jv is TJSONObject) then
-    raise EDSONException.Create(rsInvalidJsonObject);
-
-  rttiRecord := rttiType as TRttiRecordType;
-  TValue.Make(nil, rttiRecord.Handle, ret);
-  if rttiType.Name.StartsWith(MAP_PREFIX) then
-    fillMapValue(ret, jv as TJSONObject)
-  else
-    fillObjectValue(ret, jv as TJSONObject);
-  Result := ret;
+  if not (JsonValue is TJSONObject) then raise EDSONException.Create(rsInvalidJsonObject);
+  RttiRecord := RttiType as TRttiRecordType;
+  TValue.Make(nil,RttiRecord.Handle,LValue);
+  if RttiType.Name.StartsWith(MAP_PREFIX) then FillMapValue(LValue,JsonValue as TJSONObject)
+                                          else FillObjectValue(LValue,JsonValue as TJSONObject);
+  Result := LValue;
 end;
 
-function TDSONValueReader.readSetValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadSetValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 begin
-  TValue.Make(nil, rttiType.Handle, Result);
-  StringToSet(rttiType.Handle, jv.GetValue<string>(), Result.GetReferenceToRawData());
+  TValue.Make(nil,RttiType.Handle,Result);
+  StringToSet(RttiType.Handle,JsonValue.GetValue<string>,Result.GetReferenceToRawData);
 end;
 
-function TDSONValueReader.readStringValue(const rttiType: TRttiType;
-  const jv: TJSONValue): TValue;
+function TDSONValueReader.ReadCharValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
+begin
+  if JsonValue.Value<>'' then Result := TValue.From<Char>(JsonValue.Value[1])
+                         else Result := TValue.From<Char>(#0);
+end;
+
+function TDSONValueReader.ReadStringValue(const RttiType:TRttiType;const JsonValue:TJSONValue):TValue;
 var
-  rst: TRttiStringType;
+  StringType : TRttiStringType;
 begin
-  rst := rttiType as TRttiStringType;
-  case rst.StringKind of
-    skShortString: Result := TValue.From(jv.GetValue<ShortString>());
-    skAnsiString: Result := TValue.From(jv.GetValue<AnsiString>());
-    skWideString: Result := TValue.From(jv.GetValue<WideString>());
-    skUnicodeString: Result := jv.GetValue<string>();
+  StringType := RttiType as TRttiStringType;
+  case StringType.StringKind of
+    skShortString   : Result := TValue.From(JsonValue.GetValue<ShortString>);
+    skAnsiString    : Result := TValue.From(JsonValue.GetValue<AnsiString>);
+    skWideString    : Result := TValue.From(JsonValue.GetValue<WideString>);
+    skUnicodeString : Result := JsonValue.GetValue<string>;
   end;
 end;
 
-procedure TDSONValueReader.setObjValue(const instance: TValue;
-  const rttiMember: TRttiMember; const jv: TJSONValue);
+procedure TDSONValueReader.SetObjValue(const Instance:TValue;const RttiMember:TRttiMember;const JsonValue:TJSONValue);
 var
-  value: TValue;
-  rttiType: TRttiType;
-  instanceP: Pointer;
-  defValueAttr: DefValueAttribute;
+  Value      : TValue;
+  RttiType   : TRttiType;
+  LIinstance : Pointer;
+  ValueAttr  : DefValueAttribute;
 begin
-  instanceP := getObjInstance(instance);
-  value := rttiMember.getValue(instanceP);
-  rttiType := rttiMember.getType();
-  if value.IsObject then
-    value.AsObject.Free();
-
-  if tryReadValueFromJson(rttiType, jv, value) then
-    rttiMember.setValue(instanceP, value)
-  else if rttiMember.hasAttribute<DefValueAttribute>(defValueAttr) then
-    rttiMember.setValue(instanceP, defValueAttr.defVal);
+  LIinstance := GetObjInstance(Instance);
+  Value      := RttiMember.GetValue(LIinstance);
+  RttiType   := RttiMember.GetType;
+  if Value.IsObject then Value.AsObject.Free;
+  if TryReadValueFromJson(RttiType,JsonValue,Value) then RttiMember.SetValue(LIinstance,Value) else
+  begin
+    if RttiMember.hasAttribute<DefValueAttribute>(ValueAttr) then
+    begin
+      RttiMember.SetValue(LIinstance,ValueAttr.DefVal);
+    end;
+  end;
 end;
 
-function TDSONValueReader.processRead(const _typeInfo: PTypeInfo; const jv: TJSONValue): TValue;
+function TDSONValueReader.ProcessRead(const ATypeInfo:PTypeInfo;const JsonValue:TJSONValue):TValue;
 begin
   Result := TValue.Empty;
-  tryReadValueFromJson(FRttiContext.GetType(_typeInfo), jv, Result)
+  TryReadValueFromJson(FRttiContext.GetType(ATypeInfo),JsonValue,Result);
 end;
 
-function TDSONValueReader.tryReadValueFromJson(const rttiType: TRttiType;
-  const jv: TJSONValue; var outV: TValue): Boolean;
+function TDSONValueReader.TryReadValueFromJson(const RttiType:TRttiType;const JsonValue:TJSONValue;out OutValue:TValue):Boolean;
 var
   tk: TTypeKind;
 begin
   Result := False;
-  if (jv = nil) or jv.Null then
-    Exit();
-
-  tk := rttiType.TypeKind;
+  if (JsonValue = nil) or JsonValue.Null then Exit;
+  tk := RttiType.TypeKind;
   case tk of
-    tkInteger: outV := readIntegerValue(rttiType, jv);
-    tkInt64: outV := readInt64Value(rttiType, jv);
-    tkEnumeration: outV := readEnumValue(rttiType, jv);
-    tkFloat: outV := readFloatValue(rttiType, jv);
-    tkString, tkLString, tkWString, tkUString: outV := readStringValue(rttiType, jv);
-    tkClass: outV := readClassValue(rttiType, jv);
-    tkDynArray, tkArray: outV := readDynArrayValue(rttiType, jv);
-    tkRecord: outV := readRecordValue(rttiType, jv);
-    tkSet: outV := readSetValue(rttiType, jv);
+    tkInteger     ,
+    tkInt64       : OutValue := ReadIntegerValue(RttiType,JsonValue);
+    tkEnumeration : OutValue := ReadEnumValue(RttiType,JsonValue);
+    tkFloat       : OutValue := ReadFloatValue(RttiType,JsonValue);
+    tkString      ,
+    tkLString     ,
+    tkWString     ,
+    tkUString     : OutValue := ReadStringValue(RttiType, JsonValue);
+    tkClass       : OutValue := ReadClassValue(RttiType, JsonValue);
+    tkDynArray    ,
+    tkArray       : OutValue := ReadDynArrayValue(RttiType,JsonValue);
+    tkRecord      : OutValue := ReadRecordValue(RttiType,JsonValue);
+    tkSet         : OutValue := ReadSetValue(RttiType,JsonValue);
+    tkChar        ,
+    tkWChar       : OutValue := ReadCharValue(RttiType,JsonValue);
   else
-    raise EDSONException.CreateFmt(rsNotSupportedType, [rttiType.Name]);
+    raise EDSONException.CreateFmt(rsNotSupportedType,[RttiType.Name]);
   end;
   Result := True;
 end;
 
 { TDSON }
 
-class function TDSON.fromJson<T>(const json: string): T;
+class function TDSON.FromJson<T>(const Json:string):T;
 var
-  dvr: TDSONValueReader;
-  jv: TJSONValue;
+  ValueReader : TDSONValueReader;
+  JsonValue   : TJSONValue;
 begin
-  jv := nil;
-  dvr := TDSONValueReader.Create();
+  JsonValue   := nil;
+  ValueReader := TDSONValueReader.Create;
   try
-    jv := TJSONObject.ParseJSONValue(json);
-    Result := dvr.processRead(TypeInfo(T), jv).AsType<T>();
+    JsonValue := TJSONObject.ParseJSONValue(Json);
+    Result    := ValueReader.ProcessRead(TypeInfo(T),JsonValue).AsType<T>;
   finally
-    jv.Free();
-    dvr.Free();
+    if Assigned(JsonValue) then JsonValue.Free;
+    ValueReader.Free;
   end;
 end;
 
-class function TDSON.fromJson<T>(const jsonStream: TStream): T;
+class function TDSON.FromJson<T>(const JsonStream:TStream):T;
 var
-  dvr: TDSONValueReader;
-  jv: TJSONValue;
-  jsonData: TArray<Byte>;
+  ValueReader : TDSONValueReader;
+  JsonValue   : TJSONValue;
+  JsonData    : TArray<Byte>;
 begin
-  jv := nil;
-  dvr := TDSONValueReader.Create();
+  JsonValue   := nil;
+  ValueReader := TDSONValueReader.Create;
   try
-    jsonStream.Position := 0;
-    SetLength(jsonData, jsonStream.Size);
-    jsonStream.ReadBuffer(Pointer(jsonData)^, jsonStream.Size);
-    jv := TJSONObject.ParseJSONValue(jsonData, 0);
-    Result := dvr.processRead(TypeInfo(T), jv).AsType<T>();
+    JsonStream.Position := 0;
+    SetLength(JsonData,JsonStream.Size);
+    JsonStream.ReadBuffer(Pointer(JsonData)^,JsonStream.Size);
+    JsonValue := TJSONObject.ParseJSONValue(JsonData,0);
+    Result    := ValueReader.ProcessRead(TypeInfo(T),JsonValue).AsType<T>;
   finally
-    jv.Free();
-    dvr.Free();
+    if Assigned(JsonValue) then JsonValue.Free;
+    ValueReader.Free;
   end;
 end;
 
-class function TDSON.toJson<T>(const value: T;
-  const ignoreUnknownTypes: Boolean): string;
+class function TDSON.ToJson<T>(const Value:T;const Options:TDSONWriterOptions):string;
 var
-  dvw: TDSONValueWriter;
-  jv: TJSONValue;
+  ValueWriter : TDSONValueWriter;
+  JsonValue   : TJSONValue;
 begin
-  Result := '';
-  jv := nil;
-  dvw := TDSONValueWriter.Create();
+  Result      := '';
+  JsonValue   := nil;
+  ValueWriter := TDSONValueWriter.Create;
   try
-    jv := dvw.processWrite(TValue.From(value), ignoreUnknownTypes);
-    if jv <> nil then
-      Result := jv.ToJSON;
+    JsonValue := ValueWriter.ProcessWrite(TValue.From(Value),Options);
+    if JsonValue<>nil then Result := JsonValue.ToJSON;
   finally
-    jv.Free();
-    dvw.Free();
+    if Assigned(JsonValue) then JsonValue.Free;
+    ValueWriter.Free;
   end;
 end;
 
 { TDSONBase }
 
-constructor TDSONBase.Create();
+constructor TDSONBase.Create;
 begin
-  FRttiContext := TRttiContext.Create();
+  FRttiContext := TRttiContext.Create;
 end;
 
-destructor TDSONBase.Destroy();
+destructor TDSONBase.Destroy;
 begin
-  FRttiContext.Free();
+  FRttiContext.Free;
   inherited;
 end;
 
-function TDSONBase.getObjInstance(const value: TValue): Pointer;
+function TDSONBase.GetObjInstance(const Value:TValue):Pointer;
 begin
-  if value.Kind = tkRecord then
-    Result := value.GetReferenceToRawData()
-  else if value.Kind = tkClass then
-    Result := value.AsObject
-  else
-    Result := nil;
+  if Value.Kind=tkRecord then Result := Value.GetReferenceToRawData else
+  if Value.Kind=tkClass  then Result := Value.AsObject              else
+     Result := nil;
 end;
 
 { TDSONValueWriter }
 
-function TDSONValueWriter.getObjValue(const instance: TValue;
-  const rttiMember: TRttiMember): TJSONValue;
+function TDSONValueWriter.GetObjValue(const Instance:TValue;const RttiMember:TRttiMember):TJSONValue;
 var
-  value: TValue;
-  instanceP: Pointer;
+  Value     : TValue;
+  LInstance : Pointer;
 begin
-  Result := nil;
-  instanceP := getObjInstance(instance);
-  value := rttiMember.GetValue(instanceP);
-  tryWriteJsonValue(value, Result);
+  Result    := nil;
+  LInstance := GetObjInstance(Instance);
+  Value     := RttiMember.GetValue(LInstance);
+  TryWriteJsonValue(Value,Result);
 end;
 
-function TDSONValueWriter.processWrite(const value: TValue;
-  const ignoreUnknownTypes: Boolean): TJSONValue;
+function TDSONValueWriter.IgnoreDefault: Boolean;
 begin
-  Result := nil;
-  FIgnoreUnknownTypes := ignoreUnknownTypes;
-  tryWriteJsonValue(value, Result);
+  Result := not(ForceDefault in FOptions);
 end;
 
-function TDSONValueWriter.tryWriteJsonValue(const value: TValue;
-  var jv: TJSONValue): Boolean;
+function TDSONValueWriter.ProcessWrite(const Value:TValue;const Options:TDSONWriterOptions):TJSONValue;
+begin
+  Result   := nil;
+  FOptions := Options;
+  TryWriteJsonValue(Value,Result);
+end;
+
+function TDSONValueWriter.TryWriteJsonValue(const Value:TValue;var JsonValue:TJSONValue):Boolean;
 var
-  tk: TTypeKind;
-  rttiType: TRttiType;
+  tk       : TTypeKind;
+  RttiType : TRttiType;
 begin
   Result := False;
-  if value.IsEmpty then
-    Exit();
-
-  rttiType := FRttiContext.GetType(value.TypeInfo);
-  tk := rttiType.TypeKind;
+  if Value.IsEmpty then Exit;
+  RttiType := FRttiContext.GetType(Value.TypeInfo);
+  tk       := RttiType.TypeKind;
   case tk of
-    tkInteger: jv := writeIntegerValue(rttiType, value);
-    tkInt64: jv := writeInt64Value(rttiType, value);
-    tkEnumeration: jv := writeEnumValue(rttiType, value);
-    tkFloat: jv := writeFloatValue(rttiType, value);
-    tkString, tkLString, tkWString, tkUString: jv := writeStringValue(rttiType, value);
-    tkClass, tkRecord: jv := writeClassValue(rttiType, value);
-    tkDynArray, tkArray: jv := writeDynArrayValue(rttiType, value);
-    tkSet: jv := writeSetValue(rttiType, value);
+    tkInteger     ,
+    tkInt64       : JsonValue := WriteIntegerValue(RttiType,Value);
+    tkEnumeration : JsonValue := WriteEnumValue(RttiType,Value);
+    tkFloat       : JsonValue := WriteFloatValue(RttiType,Value);
+    tkString      ,
+    tkLString     ,
+    tkWString     ,
+    tkUString     : JsonValue := WriteStringValue(RttiType,Value);
+    tkClass       ,
+    tkRecord      : JsonValue := WriteClassValue(RttiType,Value);
+    tkDynArray    ,
+    tkArray       : JsonValue := WriteDynArrayValue(RttiType,Value);
+    tkSet         : JsonValue := WriteSetValue(RttiType,Value);
+    tkChar        ,
+    tkWChar       : JsonValue := WriteStringValue(RttiType,Value);
   else
-    if FIgnoreUnknownTypes then
-      Exit(False)
-    else
-      raise EDSONException.CreateFmt(rsNotSupportedType, [rttiType.Name, TRttiEnumerationType.GetName(tk)]);
+    if IgnoreUnknownTypes in FOptions then Exit(False) else
+    begin
+      raise EDSONException.CreateFmt(rsNotSupportedType,[RttiType.Name,TRttiEnumerationType.GetName(tk)]);
+    end;
   end;
   Result := True;
 end;
 
-function TDSONValueWriter.writeClassValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteClassValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
 begin
-  if rttiType.Name.StartsWith(MAP_PREFIX) then
-    Result := writeMap(value)
-  else
-    Result := writeObject(value);
+  if RttiType.Name.StartsWith(MAP_PREFIX) then Result := WriteMap(Value)
+                                          else Result := WriteObject(Value);
 end;
 
-function TDSONValueWriter.writeDynArrayValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteDynArrayValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
 var
-  ret: TJSONArray;
-  jv: TJSONValue;
-  i: Integer;
+  LArray      : TJSONArray;
+  JsonValue   : TJSONValue;
+  i           : Integer;
+  ArrayLength : Integer;
 begin
-  ret := TJSONArray.Create();
-  try
-    for i := 0 to value.GetArrayLength() - 1 do
-    begin
-      if tryWriteJsonValue(value.GetArrayElement(i), jv) then
-        ret.AddElement(jv);
-    end;
-  except
-    ret.Free();
-    raise;
-  end;
-  Result := ret;
-end;
-
-function TDSONValueWriter.writeEnumValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
-var
-  enumItemName: string;
-begin
-  if rttiType.Handle = booleanTi then
-    Result := TJSONBool.Create(value.AsBoolean)
+  if BaseTypeInfo(Value.TypeInfo)=BytesTypeInfo then
+  begin
+    TryWriteJsonValue(Value.From(EncodeBytes(Value.AsType<TBytes>)),Result);
+  end
   else
   begin
-    enumItemName := GetEnumName(value.TypeInfo, value.AsOrdinal);
-    Result := TJSONString.Create(enumItemName);
+    ArrayLength := Value.GetArrayLength;
+    if ArrayLength=0 then Exit(nil);
+    LArray := TJSONArray.Create;
+    try
+      for i := 0 to ArrayLength-1 do
+      begin
+        if TryWriteJsonValue(Value.GetArrayElement(i),JsonValue) then LArray.AddElement(JsonValue);
+      end;
+    except
+      LArray.Free;
+      raise;
+    end;
+    Result := LArray;
   end;
 end;
 
-function TDSONValueWriter.writeFloatValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteEnumValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
+var
+  LEnum    : string;
+  LValue   : string;
+  TypeData : PTypeData;
 begin
-  Result := TJSONNumber.Create(value.AsExtended);
+  Result   := nil;
+  TypeData := Value.TypeInfo.TypeData;
+  LValue   := GetEnumName(Value.TypeInfo,Value.AsOrdinal);
+  if (TypeData.MinValue=0)                                 and
+     (TypeData.MaxValue=1)                                 and
+     (SameText(LValue,'True') or SameText(LValue,'False')) then
+  begin
+    if SameText(LValue,'True') or (ForceDefault in FOptions)  then
+    begin
+      Result := TJSONBool.Create(Value.AsBoolean);
+    end;
+  end
+  else
+  begin
+    LEnum := GetEnumName(Value.TypeInfo,TypeData.MinValue);
+    if (LValue<>LEnum) or (ForceDefault in FOptions) then
+    begin
+      Result := TJSONString.Create(LValue);
+    end;
+  end;
 end;
 
-function TDSONValueWriter.writeInt64Value(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteFloatValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
+var
+  LValue  : TDateTime;
+  LString : string;
+  LType   : PTypeInfo;
+  LFloat  : string;
 begin
-  Result := TJSONNumber.Create(value.AsInt64);
+  Result := nil;
+  LType  := BaseTypeInfo(RttiType.Handle);
+  if (LType=DateTimeTypeInfo) or (LType=DateTypeInfo) or (LType=TimeTypeInfo)then
+  begin
+    LValue := Value.AsExtended;
+    LFloat := FloatToStr(LValue);
+    if ((LFloat=ZeroFloatString) or (LFloat=NullDateTimeString)) and IgnoreDefault then Exit;
+    LString := DateTimeToISO8601(LValue,LType);
+    Result  := TJSONString.Create(LString);
+  end
+  else
+  begin
+    LValue := Value.AsExtended;
+    LFloat := FloatToStr(LValue);
+    if (FloatToStr(LValue)<>ZeroFloatString) or (ForceDefault in FOptions) then
+    begin
+      Result := TJSONNumber.Create(LValue);
+    end;
+  end;
 end;
 
-function TDSONValueWriter.writeIntegerValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteIntegerValue(const RttiType: TRttiType;const Value:TValue):TJSONValue;
+var
+  LValue : Int64;
 begin
-  Result := TJSONNumber.Create(value.AsInteger);
+  LValue := Value.AsInt64;
+  if (LValue>0) or (ForceDefault in FOptions) then Result := TJSONNumber.Create(LValue)
+                                              else Result := nil;
 end;
 
-function TDSONValueWriter.writeMap(const instance: TValue): TJSONObject;
+function TDSONValueWriter.WriteMap(const Instance: TValue): TJSONObject;
 var
   ret: TJSONObject;
-  rttiType: TRttiType;
+  RttiType: TRttiType;
   toArrayMethod: TRttiMethod;
   pairsArray: TValue;
   arrayType: TRttiDynamicArrayType;
@@ -657,10 +703,10 @@ var
   i, c: Integer;
   key: string;
 begin
-  rttiType := FRttiContext.GetType(instance.TypeInfo);
+  RttiType := FRttiContext.GetType(Instance.TypeInfo);
 
-  toArrayMethod := rttiType.GetMethod('toArray');
-  pairsArray := toArrayMethod.Invoke(instance, []);
+  toArrayMethod := RttiType.GetMethod('toArray');
+  pairsArray := toArrayMethod.Invoke(Instance, []);
   arrayType := FRttiContext.GetType(pairsArray.TypeInfo) as TRttiDynamicArrayType;
   paitType := arrayType.ElementType;
   keyField := paitType.GetField('Key');
@@ -673,7 +719,7 @@ begin
     begin
       pair := pairsArray.GetArrayElement(i);
       key := keyField.getValue(pair.GetReferenceToRawData()).ToString;
-      ret.AddPair(TJSONPair.Create(key, getObjValue(pair, valueField)));
+      ret.AddPair(TJSONPair.Create(key, GetObjValue(pair, valueField)));
     end;
     Result := ret;
   except
@@ -682,211 +728,188 @@ begin
   end;
 end;
 
-function TDSONValueWriter.writeObject(const instance: TValue): TJSONObject;
+function TDSONValueWriter.WriteObject(const Instance: TValue): TJSONObject;
 var
-  ret: TJSONObject;
+  LObject : TJSONObject;
 
-  procedure processRttiMember(const rttiMember: TRttiMember);
+  procedure ProcessRttiMember(const RttiMember: TRttiMember);
   var
-    propertyName: string;
-    jv: TJSONValue;
+    PropertyName : string;
+    JsonValue    : TJSONValue;
   begin
-    if not ((rttiMember.Visibility in [mvPublic, mvPublished]) and rttiMember.canRead()) then
-      Exit();
-
-    propertyName := rttiMember.getName();
-    jv := getObjValue(instance, rttiMember);
-    if jv <> nil then
-      ret.AddPair(propertyName, jv);
+    if not ((RttiMember.Visibility in [mvPublic,mvPublished]) and RttiMember.CanRead) then Exit;
+    PropertyName := RttiMember.getName;
+    JsonValue    := GetObjValue(Instance,RttiMember);
+    if JsonValue<>nil then LObject.AddPair(PropertyName,JsonValue);
   end;
-  
+
 var
-  rttiType: TRttiType;
-  rttiMember: TRttiMember;
+  RttiType   : TRttiType;
+  RttiMember : TRttiMember;
 begin
   Result := nil;
-  if instance.IsEmpty then
-    Exit();
-
-  rttiType := FRttiContext.GetType(instance.TypeInfo);
-  ret := TJSONObject.Create();
+  if Instance.IsEmpty then Exit;
+  RttiType := FRttiContext.GetType(Instance.TypeInfo);
+  LObject  := TJSONObject.Create;
   try
-    for rttiMember in rttiType.GetDeclaredProperties() do
-      processRttiMember(rttiMember);
-    for rttiMember in rttiType.GetDeclaredFields() do
-      processRttiMember(rttiMember);
-      
-    Result := ret;
+    for RttiMember in RttiType.GetDeclaredProperties do ProcessRttiMember(RttiMember);
+    for RttiMember in RttiType.GetDeclaredFields do ProcessRttiMember(RttiMember);
+    Result := LObject;
   except
-    ret.Free();
+    LObject.Free;
     raise;
   end;
 end;
 
-function TDSONValueWriter.writeSetValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteSetValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
 begin
-  Result := TJSONString.Create(SetToString(rttiType.Handle, value.GetReferenceToRawData(), True));
+  Result := TJSONString.Create(SetToString(RttiType.Handle,Value.GetReferenceToRawData,True));
 end;
 
-function TDSONValueWriter.writeStringValue(const rttiType: TRttiType;
-  const value: TValue): TJSONValue;
+function TDSONValueWriter.WriteStringValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
+var
+  LValue : string;
 begin
-  Result := TJSONString.Create(value.AsString);
+  LValue := Value.AsString;
+  if (LValue>#0) or (ForceDefault in FOptions) then Result := TJSONString.Create(LValue)
+                                               else Result := nil;
 end;
 
 { TRttiMemberHelper }
 
-function TRttiMemberHelper.getName(): string;
+function TRttiMemberHelper.GetName:string;
 var
-  attr: SerializedNameAttribute;
+  Attribute : SerializedNameAttribute;
 begin
-  if hasAttribute<SerializedNameAttribute>(attr) then
-    Result := attr.name
-  else
-    Result := Self.Name;
+  if HasAttribute<SerializedNameAttribute>(Attribute) then Result := Attribute.Name
+                                                      else Result := Self.Name;
 end;
 
-function TRttiMemberHelper.getType(): TRttiType;
+function TRttiMemberHelper.GetType:TRttiType;
 begin
-  if Self is TRttiProperty then
-    Result := (Self as TRttiProperty).PropertyType
-  else if Self is TRttiField then
-    Result := (Self as TRttiField).FieldType
-  else
-    Result := nil;
+  if Self is TRttiProperty then Result := (Self as TRttiProperty).PropertyType else
+  if Self is TRttiField    then Result := (Self as TRttiField).FieldType       else
+     Result := nil;
 end;
 
-function TRttiMemberHelper.getValue(const instance: Pointer): TValue;
+function TRttiMemberHelper.GetValue(const Instance:Pointer):TValue;
 begin
-  if Self is TRttiProperty then
-    Result := (Self as TRttiProperty).GetValue(instance)
-  else if Self is TRttiField then
-    Result := (Self as TRttiField).GetValue(instance)
-  else
-    Result := TValue.Empty;
+  if Self is TRttiProperty then Result := (Self as TRttiProperty).GetValue(Instance) else
+  if Self is TRttiField    then Result := (Self as TRttiField).GetValue(Instance)    else
+     Result := TValue.Empty;
 end;
 
-function TRttiMemberHelper.hasAttribute<A>(var attr: A): Boolean;
+function TRttiMemberHelper.HasAttribute<A>(var Attribute:A):Boolean;
 var
-  attribute: TCustomAttribute;
+  LAttribute : TCustomAttribute;
 begin
-  attr := nil;
-  Result := False;
-  for attribute in self.GetAttributes() do
+  Attribute := nil;
+  Result    := False;
+  for LAttribute in Self.GetAttributes do
   begin
-    if attribute is A then
+    if LAttribute is A then
     begin
-      attr := A(attribute);
-      Result := True;
+      Attribute := A(LAttribute);
+      Result    := True;
       Break;
     end;
   end;
 end;
 
-function TRttiMemberHelper.canRead(): Boolean;
+function TRttiMemberHelper.CanRead: Boolean;
 begin
-  if Self is TRttiProperty then
-    Result := (Self as TRttiProperty).IsReadable
-  else if Self is TRttiField then
-    Result := True
-  else
-    Result := False;
+  if Self is TRttiProperty then Result := (Self as TRttiProperty).IsReadable else
+  if Self is TRttiField    then Result := True                               else
+     Result := False;
 end;
 
-function TRttiMemberHelper.canWrite(): Boolean;
+function TRttiMemberHelper.CanWrite:Boolean;
 begin
-  if Self is TRttiProperty then
-    Result := (Self as TRttiProperty).IsWritable
-  else if Self is TRttiField then
-    Result := True
-  else
-    Result := False;
+  if Self is TRttiProperty then Result := (Self as TRttiProperty).IsWritable else
+  if Self is TRttiField    then Result := True                               else
+     Result := False;
 end;
 
-procedure TRttiMemberHelper.setValue(const instance: Pointer;
-  const value: TValue);
+procedure TRttiMemberHelper.SetValue(const Instance:Pointer;const Value:TValue);
 begin
-  if Self is TRttiProperty then
-    (Self as TRttiProperty).SetValue(instance, value)
-  else if Self is TRttiField then
-    (Self as TRttiField).SetValue(instance, value)
+  if Self is TRttiProperty then (Self as TRttiProperty).SetValue(Instance,Value) else
+  if Self is TRttiField    then (Self as TRttiField).SetValue(Instance,Value);
 end;
 
 { SerializedNameAttribute }
 
-constructor SerializedNameAttribute.Create(const name: string);
+constructor SerializedNameAttribute.Create(const Name: string);
 begin
-  FName := name;
+  FName := Name;
 end;
 
 { DefValueAttribute }
 
-constructor DefValueAttribute.Create(const defValue: Integer);
+constructor DefValueAttribute.Create(const DefValue: Integer);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Double);
+constructor DefValueAttribute.Create(const DefValue: Double);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Extended);
+constructor DefValueAttribute.Create(const DefValue: Extended);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: string);
+constructor DefValueAttribute.Create(const DefValue: string);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Single);
+constructor DefValueAttribute.Create(const DefValue: Single);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Boolean);
+constructor DefValueAttribute.Create(const DefValue: Boolean);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Currency);
+constructor DefValueAttribute.Create(const DefValue: Currency);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
-constructor DefValueAttribute.Create(const defValue: Int64);
+constructor DefValueAttribute.Create(const DefValue: Int64);
 begin
-  FValue := defValue;
+  FValue := DefValue;
 end;
 
 { TMapClass<K, V> }
 
-procedure TMapClass<K, V>.add(const key: K; const value: V);
+procedure TMapClass<K, V>.Add(const key: K; const Value: V);
 begin
-  FMap.Add(key, value);
+  FMap.Add(key, Value);
 end;
 
-procedure TMapClass<K, V>.addOrSetValue(const key: K; const value: V);
+procedure TMapClass<K, V>.AddOrSetValue(const key: K; const Value: V);
 begin
-  FMap.AddOrSetValue(key, value);
+  FMap.AddOrSetValue(key, Value);
 end;
 
-procedure TMapClass<K, V>.clear();
+procedure TMapClass<K, V>.Clear();
 begin
   FMap.Clear();
 end;
 
-function TMapClass<K, V>.containsKey(const key: K): Boolean;
+function TMapClass<K, V>.ContainsKey(const key: K): Boolean;
 begin
   Result := FMap.ContainsKey(key);
 end;
 
-function TMapClass<K, V>.containsValue(const value: V): Boolean;
+function TMapClass<K, V>.ContainsValue(const Value: V): Boolean;
 begin
-  Result := FMap.ContainsValue(value);
+  Result := FMap.ContainsValue(Value);
 end;
 
 constructor TMapClass<K, V>.Create();
@@ -900,96 +923,96 @@ begin
   inherited;
 end;
 
-function TMapClass<K, V>.extractPair(const key: K): TPair<K, V>;
+function TMapClass<K, V>.ExtractPair(const key: K): TPair<K, V>;
 begin
   Result := FMap.ExtractPair(key);
 end;
 
-function TMapClass<K, V>.getCount(): Integer;
+function TMapClass<K, V>.GetCount(): Integer;
 begin
   Result := FMap.Count;
 end;
 
-function TMapClass<K, V>.getEnumerator(): TEnumerator<TPair<K, V>>;
+function TMapClass<K, V>.GetEnumerator(): TEnumerator<TPair<K, V>>;
 begin
   Result := FMap.GetEnumerator;
 end;
 
-function TMapClass<K, V>.getKeys(): TEnumerable<K>;
+function TMapClass<K, V>.GetKeys(): TEnumerable<K>;
 begin
   Result := FMap.Keys;
 end;
 
-function TMapClass<K, V>.getValue(const key: K): V;
+function TMapClass<K, V>.GetValue(const key: K): V;
 begin
   Result := FMap[key];
 end;
 
-function TMapClass<K, V>.getValues(): TEnumerable<V>;
+function TMapClass<K, V>.GetValues(): TEnumerable<V>;
 begin
   Result := FMap.Values;
 end;
 
-procedure TMapClass<K, V>.remove(const key: K);
+procedure TMapClass<K, V>.Remove(const key: K);
 begin
   FMap.Remove(key);
 end;
 
-function TMapClass<K, V>.toArray(): TArray<TPair<K, V>>;
+function TMapClass<K, V>.ToArray(): TArray<TPair<K, V>>;
 begin
   Result := FMap.ToArray;
 end;
 
-function TMapClass<K, V>.tryGetValue(const key: K; out value: V): Boolean;
+function TMapClass<K, V>.TryGetValue(const key: K; out Value: V): Boolean;
 begin
-  Result := FMap.TryGetValue(key, value);
+  Result := FMap.TryGetValue(key, Value);
 end;
 
 { TMap<K, V> }
 
-procedure TMap<K, V>.add(const key: K; const value: V);
+procedure TMap<K, V>.add(const key: K; const Value: V);
 begin
-  getMap().add(key, value);
+  getMap().Add(key, Value);
 end;
 
-procedure TMap<K, V>.addOrSetValue(const key: K; const value: V);
+procedure TMap<K, V>.addOrSetValue(const key: K; const Value: V);
 begin
-  getMap().items[key] := value;
+  getMap().Items[key] := Value;
 end;
 
 procedure TMap<K, V>.clear();
 begin
-  getMap().clear();
+  getMap().Clear();
 end;
 
 function TMap<K, V>.containsKey(const key: K): Boolean;
 begin
-  Result := getMap().containsKey(key);
+  Result := getMap().ContainsKey(key);
 end;
 
-function TMap<K, V>.containsValue(const value: V): Boolean;
+function TMap<K, V>.containsValue(const Value: V): Boolean;
 begin
-  Result := getMap().containsValue(value);
+  Result := getMap().ContainsValue(Value);
 end;
 
 function TMap<K, V>.extractPair(const key: K): TPair<K, V>;
 begin
-  Result := getMap().extractPair(key);
+  Result := getMap().ExtractPair(key);
 end;
 
 function TMap<K, V>.getCount(): Integer;
 begin
-  Result := getMap().count;
+  Result := getMap().Count;
 end;
 
 function TMap<K, V>.getEnumerator(): TEnumerator<TPair<K, V>>;
 begin
-  Result := getMap().getEnumerator();
+  Result := getMap().GetEnumerator();
 end;
 
 function TMap<K, V>.getKeys(): TEnumerable<K>;
 begin
-  Result := getMap().keys;
+  Result := getMap().Keys;
 end;
 
 function TMap<K, V>.getMap(): IMap<K, V>;
@@ -1001,12 +1024,12 @@ end;
 
 function TMap<K, V>.getValue(const key: K): V;
 begin
-  Result := getMap().items[key];
+  Result := getMap().Items[key];
 end;
 
 function TMap<K, V>.getValues(): TEnumerable<V>;
 begin
-  Result := getMap().values;
+  Result := getMap().Values;
 end;
 
 procedure TMap<K, V>.remove(const key: K);
@@ -1016,15 +1039,12 @@ end;
 
 function TMap<K, V>.toArray(): TArray<TPair<K, V>>;
 begin
-  Result := getMap().toArray();
+  Result := getMap().ToArray();
 end;
 
-function TMap<K, V>.tryGetValue(const key: K; out value: V): Boolean;
+function TMap<K, V>.tryGetValue(const key: K; out Value: V): Boolean;
 begin
-  Result := getMap().tryGetValue(key, value);
+  Result := getMap().TryGetValue(key, Value);
 end;
-
-initialization
-  TDSONBase.booleanTi := TypeInfo(Boolean);
 
 end.
