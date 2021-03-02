@@ -287,9 +287,9 @@ var
 begin
   if not (JsonValue is TJSONObject) then raise EDSONException.Create(rsInvalidJsonObject);
 
-  ret := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, []);
+  ret := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType,[]);
   try
-    FillObjectValue(ret, JsonValue as TJSONObject);
+    FillObjectValue(ret,JsonValue as TJSONObject);
     Result := ret;
   except
     ret.AsObject.Free();
@@ -352,7 +352,7 @@ begin
     ftSingle   : Result := JsonValue.GetValue<Single>;
     ftDouble   : Result := JsonValue.GetValue<Double>;
     ftExtended : Result := JsonValue.GetValue<Extended>;
-    ftComp     : Result := JsonValue.GetValue<Comp>;
+    ftComp     : Result := JsonValue.GetValue<Int64>;
     ftCurr     : Result := JsonValue.GetValue<Currency>;
   end;
 end;
@@ -441,8 +441,8 @@ begin
     tkString      ,
     tkLString     ,
     tkWString     ,
-    tkUString     : OutValue := ReadStringValue(RttiType, JsonValue);
-    tkClass       : OutValue := ReadClassValue(RttiType, JsonValue);
+    tkUString     : OutValue := ReadStringValue(RttiType,JsonValue);
+    tkClass       : OutValue := ReadClassValue(RttiType,JsonValue);
     tkDynArray    ,
     tkArray       : OutValue := ReadDynArrayValue(RttiType,JsonValue);
     tkRecord      : OutValue := ReadRecordValue(RttiType,JsonValue);
