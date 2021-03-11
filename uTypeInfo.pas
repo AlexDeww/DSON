@@ -1,5 +1,5 @@
 unit uTypeInfo;
-{$I Defines}
+{$I ReleaseDebug.inc}
 {$IFDEF FPC}
 {$Mode delphi}
 {$ENDIF}
