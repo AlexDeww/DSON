@@ -1,9 +1,6 @@
 unit uDSON;
-
-//Delphi Json Serializer
-
+{$I ReleaseDebug.inc}
 interface
-
 uses
   {$IFDEF DCC}
   System.SysUtils,System.Rtti,System.TypInfo,System.Json,
@@ -40,15 +37,12 @@ type
 
   EDSONException     = class(Exception);
 
-  TDSONWriterOption  = (IgnoreUnknownTypes,ForceDefault);
-  TDSONWriterOptions = set of TDSONWriterOption;
-
   TDSON =
   record
   public
     class function FromJson<T>(const Json:string):T;overload;static;
     class function FromJson<T>(const JsonStream:TStream):T;overload;static;
-    class function ToJson<T>(const Value:T;const Options:TDSONWriterOptions=[IgnoreUnknownTypes]):string;static;
+    class function ToJson<T>(const Value:T):string;static;
   end;
 
   IMap<K, V> = interface
@@ -171,8 +165,6 @@ type
 
   TDSONValueWriter   = class(TDSONBase)
   strict private
-    FOptions : TDSONWriterOptions;
-    function IgnoreDefault:Boolean;
     function WriteIntegerValue(const RttiType:TRttiType; const Value: TValue): TJSONValue;
     function WriteFloatValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
     function WriteStringValue(const RttiType: TRttiType; const Value: TValue): TJSONValue;
@@ -186,7 +178,7 @@ type
     function WriteMap(const Instance: TValue): TJSONObject;
     function TryWriteJsonValue(const Value: TValue; var JsonValue: TJSONValue): Boolean;
   public
-    function ProcessWrite(const Value:TValue;const Options:TDSONWriterOptions):TJSONValue;
+    function ProcessWrite(const Value:TValue):TJSONValue;
   end;
 
 resourcestring
@@ -194,6 +186,7 @@ resourcestring
   rsInvalidJsonArray = 'Json Value is not array.';
   rsInvalidJsonObject = 'Json Value is not object.';
   rsInvalidJsonDateTime = 'Json Value is not DateTime: %s';
+  rsNullJsonObject = 'Null Json object %s, type kind: %s';
 
 implementation
 const
@@ -277,6 +270,8 @@ begin
   begin
     LEnum  := JsonValue.Value;
     LValue := GetEnumValue(RttiType.Handle,LEnum);
+    if LValue<RttiType.Handle.TypeData.MinValue then LValue := RttiType.Handle.TypeData.MinValue else
+    if LValue>RttiType.Handle.TypeData.MaxValue then LValue := RttiType.Handle.TypeData.MaxValue ;
     Result := TValue.FromOrdinal(RttiType.Handle,LValue);
   end;
 end;
@@ -493,7 +488,7 @@ begin
   end;
 end;
 
-class function TDSON.ToJson<T>(const Value:T;const Options:TDSONWriterOptions):string;
+class function TDSON.ToJson<T>(const Value:T):string;
 var
   ValueWriter : TDSONValueWriter;
   JsonValue   : TJSONValue;
@@ -502,12 +497,12 @@ begin
   JsonValue   := nil;
   ValueWriter := TDSONValueWriter.Create;
   try
-    JsonValue := ValueWriter.ProcessWrite(TValue.From(Value),Options);
-    if JsonValue<>nil then Result := JsonValue.ToJSON;
-  finally
-    if Assigned(JsonValue) then JsonValue.Free;
-    ValueWriter.Free;
+    JsonValue := ValueWriter.ProcessWrite(TValue.From(Value));
+    if Assigned(JsonValue) then Result := JsonValue.ToJSON;
+  except
   end;
+  if Assigned(JsonValue) then JsonValue.Free;
+  FreeAndNil(ValueWriter);
 end;
 
 { TDSONBase }
@@ -543,15 +538,9 @@ begin
   TryWriteJsonValue(Value,Result);
 end;
 
-function TDSONValueWriter.IgnoreDefault: Boolean;
+function TDSONValueWriter.ProcessWrite(const Value:TValue):TJSONValue;
 begin
-  Result := not(ForceDefault in FOptions);
-end;
-
-function TDSONValueWriter.ProcessWrite(const Value:TValue;const Options:TDSONWriterOptions):TJSONValue;
-begin
-  Result   := nil;
-  FOptions := Options;
+  Result := nil;
   TryWriteJsonValue(Value,Result);
 end;
 
@@ -560,10 +549,9 @@ var
   tk       : TTypeKind;
   RttiType : TRttiType;
 begin
-  Result := False;
-  if Value.IsEmpty then Exit;
   RttiType := FRttiContext.GetType(Value.TypeInfo);
   tk       := RttiType.TypeKind;
+  Result   := True;
   case tk of
     tkInteger     ,
     tkInt64       : JsonValue := WriteIntegerValue(RttiType,Value);
@@ -581,12 +569,9 @@ begin
     tkChar        ,
     tkWChar       : JsonValue := WriteStringValue(RttiType,Value);
   else
-    if IgnoreUnknownTypes in FOptions then Exit(False) else
-    begin
-      raise EDSONException.CreateFmt(rsNotSupportedType,[RttiType.Name,TRttiEnumerationType.GetName(tk)]);
-    end;
+    raise EDSONException.CreateFmt(rsNotSupportedType,[RttiType.Name,TRttiEnumerationType.GetName(tk)]);
   end;
-  Result := True;
+  if JsonValue=nil then raise EDSONException.CreateFmt(rsNullJsonObject,[RttiType.Name,TRttiEnumerationType.GetName(tk)]);
 end;
 
 function TDSONValueWriter.WriteClassValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
@@ -609,8 +594,7 @@ begin
   else
   begin
     ArrayLength := Value.GetArrayLength;
-    if ArrayLength=0 then Exit(nil);
-    LArray := TJSONArray.Create;
+    LArray      := TJSONArray.Create;
     try
       for i := 0 to ArrayLength-1 do
       begin
@@ -626,30 +610,19 @@ end;
 
 function TDSONValueWriter.WriteEnumValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
 var
-  LEnum    : string;
+  LOrdinal : Int64;
   LValue   : string;
   TypeData : PTypeData;
 begin
-  Result   := nil;
   TypeData := Value.TypeInfo.TypeData;
-  LValue   := GetEnumName(Value.TypeInfo,Value.AsOrdinal);
+  LOrdinal := Value.AsOrdinal;
+  if LOrdinal<TypeData.MinValue then LOrdinal := TypeData.MinValue else
+  if LOrdinal>TypeData.MaxValue then LOrdinal := TypeData.MaxValue ;
+  LValue := GetEnumName(Value.TypeInfo,LOrdinal);
   if (TypeData.MinValue=0)                                 and
      (TypeData.MaxValue=1)                                 and
-     (SameText(LValue,'True') or SameText(LValue,'False')) then
-  begin
-    if SameText(LValue,'True') or (ForceDefault in FOptions)  then
-    begin
-      Result := TJSONBool.Create(Value.AsBoolean);
-    end;
-  end
-  else
-  begin
-    LEnum := GetEnumName(Value.TypeInfo,TypeData.MinValue);
-    if (LValue<>LEnum) or (ForceDefault in FOptions) then
-    begin
-      Result := TJSONString.Create(LValue);
-    end;
-  end;
+     (SameText(LValue,'True') or SameText(LValue,'False')) then Result := TJSONBool.Create(Value.AsBoolean)
+                                                           else Result := TJSONString.Create(LValue);
 end;
 
 function TDSONValueWriter.WriteFloatValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
@@ -657,36 +630,24 @@ var
   LValue  : TDateTime;
   LString : string;
   LType   : PTypeInfo;
-  LFloat  : string;
 begin
-  Result := nil;
-  LType  := BaseTypeInfo(RttiType.Handle);
+  LType := BaseTypeInfo(RttiType.Handle);
   if (LType=DateTimeTypeInfo) or (LType=DateTypeInfo) or (LType=TimeTypeInfo)then
   begin
-    LValue := Value.AsExtended;
-    LFloat := FloatToStr(LValue);
-    if ((LFloat=ZeroFloatString) or (LFloat=NullDateTimeString)) and IgnoreDefault then Exit;
+    LValue  := Value.AsExtended;
     LString := DateTimeToISO8601(LValue,LType);
     Result  := TJSONString.Create(LString);
   end
   else
   begin
     LValue := Value.AsExtended;
-    LFloat := FloatToStr(LValue);
-    if (FloatToStr(LValue)<>ZeroFloatString) or (ForceDefault in FOptions) then
-    begin
-      Result := TJSONNumber.Create(LValue);
-    end;
+    Result := TJSONNumber.Create(LValue);
   end;
 end;
 
 function TDSONValueWriter.WriteIntegerValue(const RttiType: TRttiType;const Value:TValue):TJSONValue;
-var
-  LValue : Int64;
 begin
-  LValue := Value.AsInt64;
-  if (LValue>0) or (ForceDefault in FOptions) then Result := TJSONNumber.Create(LValue)
-                                              else Result := nil;
+  Result := TJSONNumber.Create(Value.AsInt64);
 end;
 
 function TDSONValueWriter.WriteMap(const Instance: TValue): TJSONObject;
@@ -767,12 +728,8 @@ begin
 end;
 
 function TDSONValueWriter.WriteStringValue(const RttiType:TRttiType;const Value:TValue):TJSONValue;
-var
-  LValue : string;
 begin
-  LValue := Value.AsString;
-  if (LValue>#0) or (ForceDefault in FOptions) then Result := TJSONString.Create(LValue)
-                                               else Result := nil;
+  Result := TJSONString.Create(Value.AsString);
 end;
 
 { TRttiMemberHelper }
